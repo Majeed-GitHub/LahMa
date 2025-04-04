@@ -13,3 +13,7 @@ mypy==1.7.1 # Type checking
 # Other dev tools (optional - can uncomment if you use them)
 # ipython
 # pre-commit
+# ... (previous content) ...
+# mypy
+mypy==1.7.1 # Type checking
+types-PyYAML==6.0.12.12 # Add type stubs for PyYAML (use a recent version)

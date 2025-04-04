@@ -1,53 +1,37 @@
 import logging
-from typing import Dict, Any, List, Optional
+from typing import Dict, Any, List, Optional, Union # Added Union
 
 # Try importing openai, but don't fail if it's somehow missing
 try:
     import openai
-
     OPENAI_AVAILABLE = True
+    # Define specific exceptions we might catch if library exists
+    OpenAIAuthError = openai.error.AuthenticationError
+    OpenAIRateLimitError = openai.error.RateLimitError
 except ImportError:
     OPENAI_AVAILABLE = False
-
-    # Define dummy class if needed for type hinting or basic structure
-    class openai:
-        class error:
-            class AuthenticationError(Exception):
-                pass
-
-            class RateLimitError(Exception):
-                pass
-
-        @staticmethod
-        def ChatCompletion(*args, **kwargs):
-            pass  # Dummy static method
+    # Removed dummy class definitions - rely on OPENAI_AVAILABLE check
+    # Define dummy exception types so subsequent try/except blocks don't cause NameErrors
+    class OpenAIAuthError(Exception): pass
+    class OpenAIRateLimitError(Exception): pass
+    print("WARNING: openai library not found. Honeypot module dynamic generation will fail if used with API key.")
 
 
 # Import LahMa specific exceptions
 try:
-    from core.exceptions import HoneypotError, ConfigError, ApiError, EnvironmentError
+     # Import only needed exceptions directly
+     from core.exceptions import HoneypotError, ConfigError, ApiError, EnvironmentError
 except ImportError:
-    print("ERROR: Cannot import core exceptions from honeypot.")
-
-    class HoneypotError(Exception):
-        pass
-
-    class ConfigError(Exception):
-        pass
-
-    class ApiError(Exception):
-        pass
-
-    class EnvironmentError(Exception):
-        pass
+     # Let ImportError propagate
+     print("CRITICAL ERROR: Cannot import core exceptions from honeypot. Check project structure/PYTHONPATH.")
+     raise
 
 
-logger = logging.getLogger(__name__)  # Logger named "modules.honeypot"
+logger = logging.getLogger(__name__) # Logger named "modules.honeypot"
 
 
-def generate_bait_rules(
-    target_tech: str, api_key: Optional[str], model: str
-) -> List[Dict[str, Any]]:
+# Optional type hints are fine
+def generate_bait_rules(target_tech: str, api_key: Optional[str], model: str) -> List[Dict[str, Any]]:
     """
     Generates honeypot bait rules. Currently uses placeholders.
 
@@ -67,39 +51,38 @@ def generate_bait_rules(
 
     # Check if OpenAI lib is needed and available (only if api_key provided for now)
     if api_key and not OPENAI_AVAILABLE:
-        raise EnvironmentError(
-            "OpenAI library is required for dynamic bait generation but not installed."
-        )
+         raise EnvironmentError("OpenAI library is required for dynamic bait generation (API key provided) but not installed.")
 
     # --- Placeholder Logic ---
     # TODO: Implement actual OpenAI API call here
-    if api_key:
-        logger.warning(
-            f"OpenAI API key provided, but actual generation via model '{model}' is NOT YET IMPLEMENTED."
-        )
-        logger.warning("Using hardcoded placeholder rules instead.")
-        # Example API call structure (commented out):
-        # try:
-        #     openai.api_key = api_key
-        #     response = openai.ChatCompletion.create(
-        #         model=model,
-        #         messages=[{"role": "user", "content": f"Generate simple YAML rule for fake {target_tech} service."}],
-        #         # Add timeout, max_tokens etc.
-        #     )
-        #     # TODO: Parse and validate response content
-        #     generated_content = response.choices[0].message.content
-        #     logger.info("Simulated OpenAI call successful (using placeholder response).")
-        #     # return parsed_rules
-        # except openai.error.AuthenticationError:
-        #     raise ApiError("OpenAI", "Authentication Error - Invalid API Key?") from None
-        # except openai.error.RateLimitError:
-        #     raise ApiError("OpenAI", "Rate limit exceeded.") from None
-        # except Exception as e:
-        #     raise ApiError("OpenAI", f"API call failed: {e}") from e
+    if api_key and OPENAI_AVAILABLE: # Check flag again
+         logger.warning(f"OpenAI API key provided, but actual generation via model '{model}' is NOT YET IMPLEMENTED.")
+         logger.warning("Using hardcoded placeholder rules instead.")
+         # Example API call structure (commented out):
+         # try:
+         #     openai.api_key = api_key
+         #     # Ensure compatibility with openai version used (0.28.0 needs create)
+         #     response = openai.ChatCompletion.create(
+         #         model=model,
+         #         messages=[{"role": "user", "content": f"Generate simple YAML rule for fake {target_tech} service."}],
+         #         # Add timeout, max_tokens etc.
+         #     )
+         #     # TODO: Parse and validate response content
+         #     generated_content = response.choices[0].message.content
+         #     logger.info("Simulated OpenAI call successful (using placeholder response).")
+         #     # return parsed_rules
+         # except OpenAIAuthError: # Use variable defined in try/except block
+         #     raise ApiError("OpenAI", "Authentication Error - Invalid API Key?") from None
+         # except OpenAIRateLimitError: # Use variable defined in try/except block
+         #     raise ApiError("OpenAI", "Rate limit exceeded.") from None
+         # except Exception as e:
+         #     raise ApiError("OpenAI", f"API call failed: {e}") from e
     else:
-        logger.info(
-            "No OpenAI API key found in config or environment. Using static placeholder rules."
-        )
+        if api_key and not OPENAI_AVAILABLE:
+             # Should have been caught above, but defensive log
+             logger.error("OpenAI API key provided but library missing.")
+        else: # No API key provided
+             logger.info("No OpenAI API key found in config or environment. Using static placeholder rules.")
 
     # Return hardcoded placeholder rules
     placeholder_rules = [
@@ -108,7 +91,7 @@ def generate_bait_rules(
             "target_tech": target_tech,
             "type": "banner_grab",
             "decoy_content": f"Placeholder {target_tech} Banner - Welcome!",
-            "action": "log_connection",
+            "action": "log_connection"
         }
     ]
     return placeholder_rules
@@ -133,9 +116,7 @@ def deploy_honeypot(rules: List[Dict[str, Any]]):
         logger.info(f"Deploying Rule ID: {rule_id}")
         logger.info(f"  Target Tech: {target}")
         logger.info(f"  Rule Type: {rule_type}")
-        logger.info(
-            f"  Content/Action: {rule.get('decoy_content') or rule.get('action')}"
-        )
+        logger.info(f"  Content/Action: {rule.get('decoy_content') or rule.get('action')}")
         # TODO: Implement actual deployment logic based on rule type
         # (e.g., start a listener, configure firewall rule, etc.)
         # This is highly complex and depends on the desired honeypot system.
@@ -150,34 +131,38 @@ def run(config: Dict[str, Any]):
     Entry point for the Honeypot module. Generates and deploys rules (simulation).
     """
     logger.info("--- Starting Honeypot Module ---")
-    honeypot_config = config.get("honeypot", {})  # Optional section in config
-    openai_config = config.get("openai", {})  # Get OpenAI settings
+    honeypot_config = config.get('honeypot', {}) # Optional section in config
+    openai_config = config.get('openai', {})     # Get OpenAI settings
 
     # Get module-specific settings (example)
     target_technology = honeypot_config.get("target_tech_simulation", "Generic Service")
     logger.info(f"Configured to simulate honeypot for: {target_technology}")
 
     # Get OpenAI settings (API key loaded securely by core.config from env or config file)
-    api_key = openai_config.get("api_key")  # Can be None
-    model = openai_config.get("model", "gpt-3.5-turbo")  # Use default if not set
+    api_key = openai_config.get("api_key") # Can be None
+    model = openai_config.get("model", "gpt-3.5-turbo") # Use default if not set
 
     # Generate rules (currently placeholder)
     try:
         generated_rules = generate_bait_rules(
-            target_tech=target_technology, api_key=api_key, model=model
+            target_tech=target_technology,
+            api_key=api_key,
+            model=model
         )
     except (ApiError, EnvironmentError) as e:
-        # Handle errors during rule generation phase
-        logger.error(f"Failed to generate honeypot rules: {e}")
-        # Re-raise as HoneypotError to indicate module failure
-        raise HoneypotError(f"Rule generation failed: {e}") from e
+         # Handle errors during rule generation phase
+         logger.error(f"Failed to generate honeypot rules: {e}")
+         # Re-raise as HoneypotError to indicate module failure
+         raise HoneypotError(f"Rule generation failed: {e}") from e
+
 
     # Deploy the generated rules (currently placeholder)
     try:
         deploy_honeypot(generated_rules)
     except Exception as e:
-        # Catch unexpected errors during deployment simulation
-        logger.error(f"Error during simulated honeypot deployment: {e}", exc_info=True)
-        raise HoneypotError(f"Simulated deployment failed: {e}") from e
+         # Catch unexpected errors during deployment simulation
+         logger.error(f"Error during simulated honeypot deployment: {e}", exc_info=True)
+         raise HoneypotError(f"Simulated deployment failed: {e}") from e
+
 
     logger.info("--- Honeypot Module Finished ---")
