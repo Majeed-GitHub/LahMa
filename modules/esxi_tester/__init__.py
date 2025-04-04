@@ -90,8 +90,14 @@ def check_esxi_target(host: str, port: int, timeout: int) -> Tuple[bool, str]:
     # WARNING: Ignoring SSL verification is insecure for actual operations,
     # but often necessary for initial checks against self-signed certs.
     context = None
-    if hasattr(ssl, "_create_unverified_context"):
-context = ssl._create_unverified_context()  # nosec B323
+    # CORRECTED INDENTATION HERE
+    try:
+        if hasattr(ssl, "_create_unverified_context"):
+            context = ssl._create_unverified_context()  # nosec B323
+    except Exception as e:
+        logger.warning(f"Could not prepare SSL context: {e}")
+        # Decide if you want to proceed without context or raise error
+        # For now, we'll let it try connecting without context if creation fails
 
     try:
         # Attempt to connect using SmartConnect (handles different API versions)
@@ -102,7 +108,7 @@ context = ssl._create_unverified_context()  # nosec B323
             port=port,
             user="",  # Dummy user
             pwd="",  # Dummy password
-            sslContext=context,  # Ignore SSL cert validation
+            sslContext=context,  # Ignore SSL cert validation / Use created context
         )
 
         if service_instance:
@@ -142,8 +148,10 @@ context = ssl._create_unverified_context()  # nosec B323
         return False, message
     except Exception as e:
         # Catch other unexpected pyVmomi or general errors
-        message = f"An unexpected error occurred during connection: {e}"
-        logger.error(f"{message} Target: {host}:{port}", exc_info=True)
+        message = f"An unexpected error occurred during connection: {e.__class__.__name__}: {e}"
+        logger.error(
+            f"Error details - Target: {host}:{port}", exc_info=True
+        )  # Log full traceback for unexpected errors
         return False, message
 
     finally:
