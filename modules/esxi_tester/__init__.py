@@ -91,7 +91,7 @@ def check_esxi_target(host: str, port: int, timeout: int) -> Tuple[bool, str]:
     # but often necessary for initial checks against self-signed certs.
     context = None
     if hasattr(ssl, "_create_unverified_context"):
-        context = ssl._create_unverified_context()
+context = ssl._create_unverified_context()  # nosec B323
 
     try:
         # Attempt to connect using SmartConnect (handles different API versions)
