@@ -50,20 +50,18 @@ jobs:
         flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
 
     # Step 5: Check Formatting with Black
-    # Optional: Change '--check' to '.' to automatically format if desired,
-    # but usually CI just checks.
     - name: Check Formatting with Black
       run: |
         black . --check
 
     # Step 6: Static Analysis with Bandit (for security issues)
     - name: Static Analysis with Bandit
-  run: |
-    # -ll reports medium and high severity issues.
-    # -x ./venv excludes the virtual environment directory
-    bandit -r . -ll -x ./venv
+      run: | # CORRECTED INDENTATION
+        # -ll reports medium and high severity issues.
+        # -x ./venv excludes the virtual environment directory
+        bandit -r . -ll -x ./venv
 
-    # Step 7: Type Checking with MyPy
+    # Step 7: Type Checking with MyPy # CORRECTLY PLACED STEP DEFINITION
     - name: Type Checking with MyPy
       run: |
         # Add other paths to check if needed, e.g., mypy core/ tests/
