@@ -1,0 +1,12 @@
+# Core & Modules
+click==8.1.7
+pyVmomi==8.0.1.0.1
+openai==0.28.0 # Pinned version, update as needed
+PyYAML==6.0.1
+
+# Security / Optional
+cryptography==41.0.7 # For potential config encryption later
+# stem==1.8.2 # Tor support - Keep commented out unless actively implementing
+
+# Web Fuzzer Dependencies (adjust if using different libraries)
+requests==2.31.0 # Often needed for web interactions, good to have

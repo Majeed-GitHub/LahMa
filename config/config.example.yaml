@@ -1,0 +1,61 @@
+# LahMa Configuration Example
+# Copy this file to config.yaml in the same directory and modify it.
+# config.yaml is ignored by git.
+# Sensitive values like API keys should ideally be loaded from environment variables,
+# but can be placed in config.yaml (DO NOT COMMIT config.yaml).
+
+# General Settings
+logging:
+  # Log level: DEBUG, INFO, WARNING, ERROR, CRITICAL
+  level: INFO
+  # Optional: Path to a log file. If commented out or null, logs only to console.
+  # file: lahma.log
+
+# OpenAI Settings (Used by Honeypot module)
+openai:
+  # It is STRONGLY recommended to set the API key via environment variable:
+  # export OPENAI_API_KEY="sk-..."
+  # If set here, it overrides the environment variable (use with caution).
+  # api_key: "YOUR_API_KEY_HERE"
+  model: "gpt-3.5-turbo" # Default model (cheaper, faster than gpt-4)
+  # request_timeout: 60 # Optional: Timeout in seconds for OpenAI API calls
+
+# ESXi Tester Settings
+esxi_tester:
+  # List of target ESXi hosts (IP addresses or hostnames)
+  # Ensure you have EXPLICIT AUTHORIZATION before scanning.
+  targets:
+    - "192.168.1.100" # Example - Change to authorized targets only
+    # - "esxi-server.local:443" # Can specify port if not default 443
+  # Timeout in seconds for connection attempts or specific checks
+  check_timeout: 10
+
+# Web Fuzzer Settings
+web_fuzzer:
+  # Target URL for fuzzing/scanning
+  # Use safe targets like https://scanme.nmap.org for testing.
+  target_url: "https://scanme.nmap.org"
+
+  # Nuclei specific settings
+  nuclei:
+    # Optional: Path to nuclei templates directory or specific template files/globs.
+    # If commented out, Nuclei might use its default locations/templates.
+    # templates_path: "/path/to/your/nuclei-templates"
+    # Optional: Extra command-line flags for Nuclei. Use shlex syntax if needed.
+    # Add -json for structured output parsing later?
+    extra_flags: "-silent -severity critical,high,medium -timeout 5" # Added 5 min scan timeout flag
+    # Optional: Timeout for the entire Nuclei process (in seconds)
+    process_timeout: 600 # 10 minutes
+
+  # ParamSpider specific settings (if implemented)
+  # paramspider:
+  #   output_file: "discovered_params.txt"
+  #   extra_flags: ""
+  #   process_timeout: 300
+
+# Tor Settings (Optional - Requires Stem library and Tor service running)
+# tor:
+#   enabled: false
+#   control_port: 9051
+#   # Optional: Password for the Tor control port (if configured)
+#   # control_password: "your_tor_control_password"
