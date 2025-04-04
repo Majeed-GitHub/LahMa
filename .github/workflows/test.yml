@@ -1,0 +1,85 @@
+name: Tests and Linting # Name of the workflow displayed on GitHub
+
+# Controls when the workflow will run
+on:
+  push: # Run on every push to any branch
+    branches: [ "main" ] # You can restrict to specific branches
+  pull_request: # Run on pull requests targeting the main branch
+    branches: [ "main" ]
+
+# A workflow run is made up of one or more jobs that can run sequentially or in parallel
+jobs:
+  # This job is named 'test-lint'
+  test-lint:
+    # The type of runner that the job will run on
+    runs-on: ubuntu-latest # Use a standard Linux environment
+
+    # Define a matrix strategy to run the job with different Python versions
+    strategy:
+      fail-fast: false # Don't cancel other jobs if one Python version fails
+      matrix:
+        python-version: ["3.9", "3.10", "3.11"] # List of Python versions to test against
+
+    # Steps represent a sequence of tasks that will be executed as part of the job
+    steps:
+    # Step 1: Check out the repository code so the workflow can access it
+    - name: Checkout code
+      uses: actions/checkout@v4 # Use standard GitHub action
+
+    # Step 2: Set up the specific Python version for this job instance
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v5
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    # Step 3: Install dependencies
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install -r requirements.txt
+        pip install -r requirements-dev.txt
+        # Add any system dependencies if needed later, e.g.:
+        # sudo apt-get update && sudo apt-get install -y some-package
+
+    # Step 4: Lint with Flake8
+    - name: Lint with Flake8
+      run: |
+        # stop the build if there are Python syntax errors or undefined names
+        flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+        # exit-zero treats all errors as warnings. Adjust max-line-length if needed.
+        flake8 . --count --exit-zero --max-complexity=10 --max-line-length=127 --statistics
+
+    # Step 5: Check Formatting with Black
+    # Optional: Change '--check' to '.' to automatically format if desired,
+    # but usually CI just checks.
+    - name: Check Formatting with Black
+      run: |
+        black . --check
+
+    # Step 6: Static Analysis with Bandit (for security issues)
+    - name: Static Analysis with Bandit
+      run: |
+        # -ll reports medium and high severity issues. Use -lll for all levels.
+        # Add '--exit-zero' if you only want warnings, not failures.
+        bandit -r . -ll
+
+    # Step 7: Type Checking with MyPy
+    - name: Type Checking with MyPy
+      run: |
+        # Add other paths to check if needed, e.g., mypy core/ tests/
+        # --ignore-missing-imports is often needed for libraries without type stubs
+        mypy . --ignore-missing-imports
+
+    # Step 8: Run Tests with Pytest
+    - name: Run Tests with Pytest
+      run: |
+        # Generate coverage report in XML format for potential upload
+        pytest tests/ --cov=lahma --cov-report=xml --cov-report=term
+
+    # Optional Step 9: Upload coverage report (e.g., to Codecov)
+    # - name: Upload coverage reports to Codecov
+    #   uses: codecov/codecov-action@v4
+    #   with:
+    #     token: ${{ secrets.CODECOV_TOKEN }} # Store token in GitHub repo secrets
+    #     # Optional: fail CI if Codecov upload fails
+    #     # fail_ci_if_error: true
